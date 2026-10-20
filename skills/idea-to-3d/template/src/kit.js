@@ -145,6 +145,17 @@ export function fireflies(n = 40, { radius = 10, y = [0.5, 3.5], color = '#ffe98
 export function animateFireflies(pts, t) { const p = pts.geometry.attributes.position, s = pts.userData.s; for (let i = 0; i < s.length; i++) { const [a, b, sp, r, y] = s[i]; p.setXYZ(i, Math.cos(a + t * sp * 0.3) * r, y + Math.sin(b + t * sp) * 0.5, Math.sin(a + t * sp * 0.3) * r); } p.needsUpdate = true; }
 export function moon(color = '#fdf6d8') { const g = new THREE.Group(); g.add(ball(3, color, [0, 0, 0], { glow: true })); g.children[0].castShadow = false; return g; }
 
+
+// Dog: returns { group, head, tail, legs[4], height } to be driven by dogClips (anims.js). Boxes only: put it in a scene as a cheap secondary character.
+export function dog({ fur = '#c98b4e', dark = '#7a4a22', scale = 1 } = {}) {
+  const g = new THREE.Group(), body = box(0.9, 0.45, 0.4, fur, [0, 0.55, 0]), head = group(box(0.38, 0.34, 0.34, fur, [0, 0, 0]), box(0.18, 0.14, 0.2, dark, [0.24, -0.06, 0]), box(0.1, 0.2, 0.1, dark, [-0.05, 0.22, 0.12]), box(0.1, 0.2, 0.1, dark, [-0.05, 0.22, -0.12]), box(0.05, 0.05, 0.05, '#111111', [0.18, 0.05, 0.1]), box(0.05, 0.05, 0.05, '#111111', [0.18, 0.05, -0.1]));
+  head.position.set(0.58, 0.85, 0);
+  const tail = group(box(0.4, 0.08, 0.08, fur, [-0.2, 0, 0])); tail.position.set(-0.45, 0.72, 0); tail.rotation.z = 0.5;
+  const legs = [[0.32, 0.14], [0.32, -0.14], [-0.32, 0.14], [-0.32, -0.14]].map(([x, z]) => { const l = group(box(0.1, 0.34, 0.1, dark, [0, -0.17, 0])); l.position.set(x, 0.36, z); return l; });
+  g.add(body, head, tail, ...legs); g.scale.setScalar(scale);
+  return { group: g, head, tail, legs, torso: body, height: 1.0 * scale };
+}
+
 export const ease = { inOut: t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2, out: t => 1 - Math.pow(1 - t, 3) };
 export const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
 export const lerp = (a, b, t) => a + (b - a) * t;

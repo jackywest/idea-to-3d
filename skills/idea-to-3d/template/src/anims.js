@@ -26,3 +26,11 @@ export function resetRig(r) {
   for (const k of ['head', 'armL', 'armR', 'legL', 'legR', 'torso']) if (r[k]) r[k].rotation.set(0, 0, 0);
   if (r.torso) r.torso.position.y = 0.85;
 }
+
+// Clips for kit.dog(): idle, walk, run (+ aliases the Director uses). Pure functions of p (seconds) like the robot clips.
+export const dogClips = {
+  idle: (r, p) => { r.tail.rotation.y = Math.sin(p * 5) * 0.5; r.head.rotation.z = Math.sin(p * 1.5) * 0.06; },
+  walk: (r, p, k = 1) => { const w = p * 7 * k; r.legs.forEach((l, i) => { l.rotation.z = Math.sin(w + (i % 2) * Math.PI + (i > 1 ? Math.PI / 2 : 0)) * 0.5; }); r.tail.rotation.y = Math.sin(w) * 0.5; r.group.position.y += Math.abs(Math.sin(w)) * 0.03; },
+  run: (r, p, k = 1) => { const w = p * 12 * k; r.legs.forEach((l, i) => { l.rotation.z = Math.sin(w + (i > 1 ? Math.PI * 0.8 : 0) + (i % 2) * 0.35) * 0.9; }); r.tail.rotation.y = Math.sin(w * 0.8) * 0.6; r.group.position.y += Math.abs(Math.sin(w)) * 0.12; r.head.rotation.z = Math.sin(w) * 0.08; },
+};
+export function resetDog(r) { r.legs.forEach(l => l.rotation.set(0, 0, 0)); r.tail.rotation.set(0, 0, 0.5); r.head.rotation.set(0, 0, 0); }

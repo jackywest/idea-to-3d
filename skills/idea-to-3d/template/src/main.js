@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import * as kit from './kit.js';
 import { Director } from './cine.js';
+import { Assets } from './assets.js';
 import sceneDef from './scene.js';
 
 const MOODS = {
@@ -47,7 +48,7 @@ scene.add(sun);
 if (mood.stars) scene.add(kit.stars());
 
 const cine = new Director({ scene, camera, renderer }); cine.duration = cfg.duration; window.__cine = cine;
-const ctx = { THREE, kit, scene, camera, renderer, mood: cfg.mood, config: cfg, cine };
+const ctx = { THREE, kit, scene, camera, renderer, mood: cfg.mood, config: cfg, cine, assets: new Assets() };
 const fadeEl = document.createElement('div'); fadeEl.style.cssText = 'position:fixed;inset:0;pointer-events:none;opacity:0'; document.body.appendChild(fadeEl);
 let free = false;
 document.getElementById('title').textContent = sceneDef.title || 'Idea to 3D';
@@ -70,6 +71,7 @@ const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 let fixedT = q.has('t') ? parseFloat(q.get('t')) : null;   // ?t=3.5 freezes the scene at 3.5 s (deterministic captures)
 let clock0 = performance.now(), paused0 = 0;
 
+const orbitSpd = parseFloat(q.get('orbit') || '0') || 0;
 const manual = q.has('capture');                              // ?capture=1: no free-running loop, render only when __setTime is called (fast, deterministic)
 function draw(tt) {
   try { sceneDef.update && sceneDef.update(tt, ctx); } catch (e) { if (state.errors.length < 5) state.errors.push('update: ' + e.message); }
@@ -77,7 +79,7 @@ function draw(tt) {
   else {
     if (cine.actors.size || cine.props.size) cine.evalActors(tt);
     const sway = cam.user ? 0 : Math.sin(tt / cfg.duration * Math.PI * 2) * cfg.camera.sway;
-    const a = cam.az + sway, T = cfg.camera.target;
+    const a = cam.az + sway + orbitSpd * tt, T = cfg.camera.target;   // ?orbit=0.4 adds a steady turn (rad/s), handy for demos
     camera.position.set(T[0] + Math.sin(a) * Math.cos(cam.el) * cam.r, T[1] + Math.sin(cam.el) * cam.r, T[2] + Math.cos(a) * Math.cos(cam.el) * cam.r);
     camera.lookAt(T[0], T[1], T[2]);
   }

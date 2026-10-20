@@ -27,3 +27,5 @@ Everything in `assets/` is CC0 1.0 (see `assets/NOTICE.md` and each pack's `LICE
 ## Using your own models
 
 Put `.glb` files under `assets/<your-pack>/` (embedded textures preferred; a `Textures/` folder next to the file also works). Only use models you have the right to use, and keep their licence text next to them. Imported files are untrusted data: the loader only reads inside the project, refuses `..` and URLs with a scheme, and never executes anything from a model.
+
+There is no dog, croissant or bakery model in the pack: use `kit.dog()` for a quick dog, `kit.box/ball/cyl` for small props, and `kit.sign(text)` for shop signs, or import your own GLB.

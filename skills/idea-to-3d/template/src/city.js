@@ -7,7 +7,7 @@ import { rng } from './kit.js';
 const P = { com: 'kenney-city-commercial', road: 'kenney-city-roads', sub: 'kenney-city-suburban', car: 'kenney-car-kit' };
 const COM = 'abcdefghijklmn';
 
-export async function buildCity({ scene, cine, assets, rows, cell = 8, seed = 3, ground = '#9fb59a', groundSize = 220, lamps = true, bldScale = 1, houses = 'abc', skyscrapers = ['a'] }) {
+export async function buildCity({ scene, cine, assets, rows, cell = 8, seed = 3, ground = '#9fb59a', groundSize = 220, lamps = true, bldScale = 1, houses = 'abc', skyscrapers = ['a'], tint = ['#ffd9b0', '#cfe6ff', '#d9f2dc', '#ffcfe0', '#fff2b0', '#e4d6ff', '#ffffff'] }) {
   const rnd = rng(seed), R = rows.length, C = Math.max(...rows.map(r => r.length));
   const at = (i, j) => (rows[i] || '')[j] || ' ';
   const isRoad = ch => ch === '-' || ch === '|' || ch === '+';
@@ -33,6 +33,7 @@ export async function buildCity({ scene, cine, assets, rows, cell = 8, seed = 3,
       // face the street
       const dirs = [[1, 0, 0], [-1, 0, Math.PI], [0, 1, Math.PI / 2], [0, -1, -Math.PI / 2]]; let rot = 0, best = 99;
       for (const [di, dj, r] of dirs) { const n = at(i + di, j + dj); if (isRoad(n)) { best = 0; rot = r; break; } }
+      if (tint && tint.length) { const col = new THREE.Color(tint[Math.floor(rnd() * tint.length)]); b.traverse(o => { if (o.isMesh && o.material && o.material.color) { o.material = o.material.clone(); o.material.color.copy(col); } }); }   // multiplies the colour map: pastel variety instead of grey blocks
       const w = put(b, c, rot); city.buildings.push(w); cine?.obstacle(w);
     } else if (ch === 't' || ch === 'p') {
       const n = ch === 'p' ? 4 : 1;

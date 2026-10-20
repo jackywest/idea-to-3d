@@ -108,6 +108,10 @@ await t('determinism: pose at t is a pure function of t (order of evaluation doe
   const d = scaffold('det', path.join(root, 'tests/fixtures/good-scene.js'), ['--no-assets']);
   await withPage(d, async page => { const r = await page.evaluate(() => { const c = window.__cine, f = t => { const p = c.eval(t); const a = c.actors.get('bot'); return JSON.stringify([p.pos.toArray(), p.target.toArray(), a.group.position.toArray(), a.group.rotation.y]); }; const a1 = f(5.3); f(1); f(7.9); f(0); const a2 = f(5.3); return [a1, a2]; }); eq(r[0], r[1], 'poses differ'); });
 });
+await t('keyframed props are a pure function of t (no stale scale/rotation/visibility from other instants)', async () => {
+  const d = scaffold('keys', path.join(root, 'tests/fixtures/keys-scene.js'), ['--no-assets']);
+  await withPage(d, async page => { const r = await page.evaluate(() => { const c = window.__cine, p = c.props.get('p'), f = t => { c.eval(t); return JSON.stringify([p.group.position.toArray(), p.group.scale.toArray(), p.group.rotation.toArray().slice(0, 3), p.group.visible]); }; const a = f(1); f(9); f(5); f(2); return [a, f(1)]; }); eq(r[0], r[1], 'prop state depends on evaluation order'); });
+});
 await t('camera: tracking keeps the subject in frame and never enters geometry; reveal ends wider than it starts', async () => {
   const d = scaffold('cam', path.join(root, 'tests/fixtures/good-scene.js'), ['--no-assets']);
   await withPage(d, async page => { const r = await page.evaluate(() => { const c = window.__cine; const a = c.audit({ fps: 10 }); const s0 = c.eval(4.05).pos.distanceTo(c.eval(4.05).target), s1 = c.eval(7.95).pos.distanceTo(c.eval(7.95).target); return { st: a.stats, s0, s1 }; });

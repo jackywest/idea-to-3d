@@ -30,6 +30,13 @@ cine.shot({t, dur, type, focus, size, azimuth, angle, elev, lead, blend, why});
 - `blend: 0.6` blends from the previous shot's pose instead of cutting (continuous move). Default is a cut.
 - `cine.dip(t0, t1, '#000')` fades to colour and back.
 
+### Camera recipes (worked examples)
+- Camera due **south** of a subject, front view: `azimuth: 0, angle: 0`. Due north: `azimuth: 180`. Looking along an east-west street from the east end: `azimuth: 90` (west end: `270`).
+- Over-the-shoulder-ish, three quarters from the subject's front-left: `angle: 35, side: 'left'` (relative to its facing; no `azimuth`).
+- `static` still FOLLOWS a moving `focus` (it only means "no camera move relative to it"). To hold a fixed view of a place, use a point focus `[x, y, z]`.
+- `size` multiplies the subject's height. Kenney characters are chibi (big heads, 2.2 m tall in the demos): `medium` is already a close-up, `full` shows the whole body. On a point focus the height is 1.5 m.
+- Shots are cut exactly at `t`; the QA ignores the instant of a cut, so you do not need to align cuts to a grid.
+
 ### Rules that keep it cinematic
 - Dynamic does not mean busy. A static shot on a reaction is often the best shot. Average shot length 2 to 5 s.
 - One idea per shot: the subject is big enough (median at least 12 % of frame height, close-ups 40 %+).

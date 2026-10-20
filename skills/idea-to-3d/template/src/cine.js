@@ -1,7 +1,7 @@
 // Cinematic director: actors on timelines + motivated shots + camera that follows the story + objective audit.
 // Everything is a pure function of time t, so renders are reproducible and the audit can sample any instant.
 import * as THREE from 'three';
-import { robotClips, resetRig } from './anims.js';
+import { robotClips, resetRig, dogClips, resetDog } from './anims.js';
 
 const V = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
 const ease = { lin: x => x, inOut: x => x * x * (3 - 2 * x), in: x => x * x, out: x => 1 - (1 - x) * (1 - x), soft: x => x * x * x * (x * (6 * x - 15) + 10) };
@@ -20,12 +20,12 @@ export class Director {
 
   // ---- cast ------------------------------------------------------------------------------------
   // rig: kit.robot() result (procedural clips) or { group, mixer, clips, map } for a GLB character.
-  actor(name, rig, { height, radius = 0.45, clips = robotClips, strideLen = 1.6 } = {}) {
+  actor(name, rig, { height, radius = 0.45, clips = (rig.legs && rig.tail ? dogClips : robotClips), strideLen = rig.legs && rig.tail ? 1.3 : 1.6 } = {}) {
     const a = { name, rig, group: rig.group || rig, height: height || rig.height || 1.7, radius, clips, strideLen, segs: [], acts: [], start: null, bbox: new THREE.Box3(), kind: 'actor' };
     this.actors.set(name, a); this.scene.add(a.group); return a;
   }
   prop(name, obj, { size = null, held = false } = {}) {
-    const p = { name, group: obj, keys: [], segs: [], size, held, kind: 'prop', bbox: new THREE.Box3() };
+    const p = { name, group: obj, keys: [], segs: [], size, held, kind: 'prop', bbox: new THREE.Box3(), base: { scale: obj.scale.x, rot: obj.rotation.clone() } };
     this.props.set(name, p); if (!obj.parent) this.scene.add(obj); return p;
   }
   obstacle(obj) { this.obstacles.push(obj); obj.updateMatrixWorld(true); this._boxes = null; return obj; }
@@ -113,9 +113,11 @@ export class Director {
       if (t <= k[0].t) a = b = k[0]; else if (t >= k[k.length - 1].t) a = b = k[k.length - 1]; else for (let i = 0; i < k.length - 1; i++) if (t >= k[i].t && t <= k[i + 1].t) { a = k[i]; b = k[i + 1]; break; }
       const u = a === b ? 0 : (p.keyEase || ease.inOut)((t - a.t) / (b.t - a.t));
       if (a.pos) g.position.lerpVectors(toV(a.pos), toV(b.pos || a.pos), u);
-      if (a.rot) g.rotation.set(...[0, 1, 2].map(i => THREE.MathUtils.degToRad((a.rot[i] ?? 0) + ((b.rot || a.rot)[i] - a.rot[i]) * u)));
-      if (a.scale != null) g.scale.setScalar(a.scale + ((b.scale ?? a.scale) - a.scale) * u);
-      if (a.vis != null) g.visible = t < (b.t) ? a.vis : (b.vis ?? a.vis);
+      // keys are a pure function of t: a channel no key defines goes back to its rest value instead of keeping stale state from another instant
+      const hasRot = k.some(f => f.rot), hasScale = k.some(f => f.scale != null), hasVis = k.some(f => f.vis != null), R0 = [0, 0, 0];
+      if (hasRot) { const ra = a.rot || R0, rb = (b.rot || a.rot) || R0; g.rotation.set(...[0, 1, 2].map(i => THREE.MathUtils.degToRad((ra[i] ?? 0) + ((rb[i] ?? 0) - (ra[i] ?? 0)) * u))); }
+      if (hasScale) { const sa = a.scale ?? p.base.scale, sb = b.scale ?? sa; g.scale.setScalar(sa + (sb - sa) * u); }
+      if (hasVis) g.visible = t < b.t ? (a.vis ?? true) : (b.vis ?? a.vis ?? true);
     }
   }
 
@@ -126,7 +128,7 @@ export class Director {
       a.group.position.copy(pos); a.group.rotation.set(0, yaw, 0);
       if (a.vanish && a.segs.length) a.group.visible = t >= a.segs[0].t0 - 1e-6 && t <= a.segs[a.segs.length - 1].t1 + 1e-6;
       if (a.rig.mixer) this._glbPose(a, t, an);
-      else { resetRig(a.rig); const c = a.clips[an.name] || a.clips.idle; c(a.rig, an.p, an.k); }
+      else { (a.rig.legs && a.rig.tail ? resetDog : resetRig)(a.rig); const c = a.clips[an.name] || a.clips.idle || (() => {}); c(a.rig, an.p, an.k); }
       a.bbox.setFromCenterAndSize(pos.clone().add(V(0, a.height / 2, 0)), V(a.radius * 2, a.height, a.radius * 2));      // nominal body volume (collisions)
       a.visBox = a.visBox || new THREE.Box3();
     }
@@ -248,7 +250,7 @@ export class Director {
   audit({ fps = 8, t1 = this.duration, minFrac = 0.1 } = {}) {
     const cam = this.camera, rep = { samples: 0, problems: [], stats: {}, shots: this.shots.length, details: { penetration: [], cameraInGeometry: [], offFrame: [], jerk: [], occluded: [] } };
     const note = (k, o) => { const arr = rep.details[k]; if (arr.length < 8) arr.push(o); };
-    const prevPos = V(); let prevVel = V(), prevT = 0, jerk = 0, moved = 0, maxSpeed = 0, inGeo = 0, occl = 0, offFrame = 0, small = 0, noShot = 0, pen = 0, floating = 0, pulled = 0, motion = 0, cuts = 0;
+    const prevPos = V(); let prevVel = V(), prevT = 0, jerk = 0, moved = 0, maxSpeed = 0, prevCut = false, inGeo = 0, occl = 0, offFrame = 0, small = 0, noShot = 0, pen = 0, floating = 0, pulled = 0, motion = 0, cuts = 0;
     const lastPos = new Map(); const frustum = new THREE.Frustum(), m4 = new THREE.Matrix4(); const fracs = [];
     cam.aspect = cam.aspect || 16 / 9;
     const dt = 1 / fps; let n = 0;
@@ -258,8 +260,8 @@ export class Director {
       const sh = p.shot, isCut = (t - sh.t) < dt * 1.6 && !(sh.blend > 0); if (isCut && n > 0) cuts++;
       // camera kinematics (ignore cuts)
       const vel = p.pos.clone().sub(prevPos).multiplyScalar(1 / dt);
-      if (n > 1 && !isCut && !(sh.blend > 0 && t - sh.t < sh.blend)) { const acc = vel.clone().sub(prevVel).length() / dt; if (acc > 90) { jerk++; note('jerk', { t: +t.toFixed(2), shot: this.shots.indexOf(sh), acc: Math.round(acc) }); } maxSpeed = Math.max(maxSpeed, vel.length()); }
-      prevPos.copy(p.pos); prevVel = vel;
+      if (n > 1 && !isCut && !prevCut && !(sh.blend > 0 && t - sh.t < sh.blend)) { const acc = vel.clone().sub(prevVel).length() / dt; if (acc > 90) { jerk++; note('jerk', { t: +t.toFixed(2), shot: this.shots.indexOf(sh), acc: Math.round(acc) }); } maxSpeed = Math.max(maxSpeed, vel.length()); }
+      prevPos.copy(p.pos); prevVel = vel; prevCut = isCut;
       // subject visibility (primary focus)
       const f = sh.focus, list = Array.isArray(f) && typeof f[0] !== 'number' ? f : [f];
       const hasObj = list.some(x => x && x.kind);
