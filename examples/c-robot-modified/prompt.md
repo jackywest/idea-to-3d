@@ -1,0 +1,1 @@
+Use idea-to-3d on the existing scene in ./scene (the waving robot): make it night, give the robot a lantern in its left hand, add a small dog trotting in a circle around it, and slow the wave down. Keep everything else as it is.

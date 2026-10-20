@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Idea to 3D scene</title>
+<link rel="icon" href="data:,">
+<style>
+  html,body{margin:0;height:100%;background:#0e1116;overflow:hidden;font-family:system-ui,sans-serif}
+  canvas{display:block;width:100%;height:100%;touch-action:none}
+  body::after{content:'';position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.45) 100%)}
+  #hud{position:fixed;left:16px;bottom:14px;color:#fff;opacity:.8;font-size:13px;pointer-events:none;text-shadow:0 1px 3px #000}
+  #hud b{font-size:15px}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud"><b id="title"></b><br><span id="hint">drag = orbit · wheel = zoom · space = pause</span></div>
+<script type="importmap">{"imports":{"three":"./vendor/three.module.min.js"}}</script>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
