@@ -69,11 +69,13 @@ export function robot({ body = '#f1f3f7', accent = '#ff8a3d', eye = '#6cf3ff', d
   head.add(eyeL, eyeR, smile); head.position.set(0, 2.45, 0);
   const mkArm = (sd) => { const a = group(ball(0.19, accent, [0, 0, 0]), cyl(0.12, 0.1, 0.7, body, [0, -0.38, 0], null, { rough: 0.45 }, 10), ball(0.17, dark, [0, -0.78, 0]), ball(0.2, accent, [0, -0.98, 0])); a.position.set(sd * 0.74, 1.88, 0); return a; };
   const armL = mkArm(-1), armR = mkArm(1);
-  const mkLeg = (sd) => group(cyl(0.16, 0.14, 0.62, dark, [sd * 0.28, 0.5, 0], null, null, 10), box(0.4, 0.2, 0.55, accent, [sd * 0.28, 0.1, 0.07]));
+  const mkLeg = (sd) => { const l = group(cyl(0.16, 0.14, 0.62, dark, [0, -0.32, 0], null, null, 10), box(0.4, 0.2, 0.55, accent, [0, -0.72, 0.07])); l.position.set(sd * 0.28, 0.82, 0); return l; };   // pivot at the hip
   const legL = mkLeg(-1), legR = mkLeg(1);
-  g.add(torso, head, armL, armR, legL, legR);
+  const upper = new THREE.Group(); upper.position.set(0, 0.85, 0);          // torso+head+arms pivot at the hip so leaning looks right
+  [torso, head, armL, armR].forEach(o => { o.position.y -= 0.85; upper.add(o); });
+  g.add(upper, legL, legR);
   g.scale.setScalar(scale);
-  return { group: g, head, armL, armR, eyes: [eyeL, eyeR], legL, legR };
+  return { group: g, head, armL, armR, eyes: [eyeL, eyeR], legL, legR, upper, torso: upper, height: 3.0 * scale };
 }
 
 // ---- Richer scenery -------------------------------------------------------------------------

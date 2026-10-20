@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Copy the scene template into a NEW folder. Never overwrites existing files unless --force.
-// Usage: node scaffold.mjs <target-dir> [--scene path/to/scene.js] [--force]
+// Usage: node scaffold.mjs <target-dir> [--scene path/to/scene.js] [--no-assets] [--force]
+// Also copies the bundled CC0 asset pack (skills/idea-to-3d/assets) into <target>/assets unless --no-assets.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -8,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const tpl = path.resolve(here, '..', 'template');
 const args = process.argv.slice(2);
-const force = args.includes('--force');
+const force = args.includes('--force'), noAssets = args.includes('--no-assets');
 const si = args.indexOf('--scene');
 const scenePath = si >= 0 ? args[si + 1] : null;
 const target = args.find((a, i) => !a.startsWith('--') && args[i - 1] !== '--scene');
@@ -25,6 +26,8 @@ function copy(src, dst) {
   else fs.copyFileSync(src, dst);
 }
 copy(tpl, dest);
+const pack = path.resolve(here, '..', 'assets');
+if (!noAssets && fs.existsSync(pack)) copy(pack, path.join(dest, 'assets'));
 if (scenePath) {
   const s = path.resolve(scenePath);
   if (!fs.existsSync(s)) { console.error('scene file not found: ' + s); process.exit(4); }

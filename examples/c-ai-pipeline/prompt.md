@@ -1,0 +1,1 @@
+Use idea-to-3d: explain "one click, three tasks" without any text-heavy slide. Three tasks (EMAIL, INVOICE, REPORT) ride a conveyor into an AI gate and come out as three finished results (REPLIED, PAID, READY). A robot operator watches. The camera follows the information: input, gate, result, then the operator's reaction and a wide of the whole line with a DONE sign.

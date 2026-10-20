@@ -1,14 +1,21 @@
 # Idea to 3D
 
-**Turn an idea into an animated 3D scene with Claude Code.** A free, open-source skill: describe a scene in one sentence, get a low-poly 3D world you can orbit in your browser and change by talking.
+**Turn an idea into a short animated 3D film scene with Claude Code.** You describe a story in a sentence; the skill casts characters, builds a small world from real cartoon assets, animates the action, and directs a camera that follows what happens. Free, open source (MIT), runs locally in your browser. No account, no API key, no network at runtime.
 
-![A lighthouse at night, generated from one sentence](docs/media/b-lighthouse-night.gif)
+![A courier crosses a small town, waits for a taxi, hands over a parcel](docs/media/v02-a-city-courier.gif)
 
-> "Use idea-to-3d: a lighthouse on a cliff at night, its beam sweeping over a dark sea, two seagulls, a tiny boat."
+> "Use idea-to-3d: a courier carries a parcel through a small town, waits for a taxi, crosses the street and hands it to a police officer."
 
-No account, no API key, no network at runtime, no build step. Node 18+ and a browser.
+🇫🇷 [Français plus bas](#-en-français) · 🌐 [Project page](https://jackywest.com/idea-to-3d?utm_source=github&utm_medium=readme&utm_campaign=idea-to-3d) · [Changelog](CHANGELOG.md) · [Migrating from v0.1](MIGRATION.md)
 
-🇫🇷 [Version française plus bas](#-en-français) · 🌐 [Page du projet](https://jackywest.com/idea-to-3d?utm_source=github&utm_medium=readme&utm_campaign=idea-to-3d)
+## What is new in v0.2
+
+v0.1 made small procedural scenes with an orbiting camera. v0.2 is directed:
+
+- **A Director**: actors walk paths with real animation clips, carry and throw props, turn to look, react. Shots are motivated (tracking, push-in, reveal, pan, group framing) and every moving shot carries a one-line reason.
+- **Real assets**: a bundled CC0 pack (city, cars, characters, a robot, sci-fi machines) instead of boxes. Bring your own GLB too.
+- **A cinematography audit** that samples the whole timeline: is the subject framed, big enough, un-occluded; is the camera ever inside a wall; do bodies clip through each other; are moves abrupt, unmotivated or is nothing moving. It prints *when* a problem occurs and writes a contact sheet and an MP4 preview, so the model has to look at its own film.
+- Everything still deterministic, offline, MIT. v0.1 scenes still run.
 
 ## Install (30 seconds)
 
@@ -17,72 +24,82 @@ git clone https://github.com/jackywest/idea-to-3d.git
 node idea-to-3d/skills/idea-to-3d/scripts/install.mjs
 ```
 
-This copies the skill to `~/.claude/skills/idea-to-3d` (use `--project` for `./.claude/skills`, `--force` to replace an existing copy). Nothing else is touched. Prefer manual? Copy the folder `skills/idea-to-3d` yourself.
+Copies the skill to `~/.claude/skills/idea-to-3d` (`--project` for `./.claude/skills`, `--force` to replace). Nothing else is touched. Needs Node 18+. For the visual QA: `npm i -D puppeteer-core` in the scene folder and Chrome or Chromium.
 
 ## Use
 
-Open Claude Code in any folder and say:
+In Claude Code, in any folder:
 
 ```
-Use idea-to-3d: a small robot waving hello on a grassy hill, a cottage and two pine trees behind it
+Use idea-to-3d: a robot delivers a parcel to a woman at her door, trips on a cone, the parcel flies, she reacts.
 ```
 
-Claude creates a new scene folder, writes `src/scene.js`, checks it in a real headless browser (console errors, blank or frozen frames), looks at the frames, then tells you how to open it:
+Claude writes the story beats, scaffolds a new folder, writes `src/scene.js`, runs the audit, looks at the contact sheet and the preview video, fixes what is wrong, then gives you the command:
 
 ```bash
 cd my-scene && node serve.mjs      # http://127.0.0.1:5173/
 ```
 
-Drag to orbit, wheel to zoom, space to pause. Then keep talking: *"make it night, give the robot a lantern, add a dog."*
+Press **C** to leave the camera work and orbit freely, space to pause. Then keep talking: *"push in slower on her face", "make it dusk", "add a second taxi".*
 
-## Three examples (all in `examples/`, all tested)
+## Three demos (all in `examples/`, all pass the audit, all reproducible with the free pack)
 
-| | Prompt | Result |
+| Demo | Prompt | Film |
 |---|---|---|
-| **A. First scene** | a friendly robot waving on a hill, cottage, pine trees | ![A](docs/media/a-robot-welcome.gif) |
-| **B. Creative** | a lighthouse at night, sweeping beam, seagulls, a boat | ![B](docs/media/b-lighthouse-night.gif) |
-| **C. Modify A** | make it night, add a lantern and a dog, slow the wave | ![C](docs/media/c-robot-modified.gif) |
+| **A. City + dynamic camera** ([prompt](examples/a-city-courier/prompt.md)) | a courier crosses a town, waits for a taxi, hands over a parcel | ![A](docs/media/v02-a-city-courier.gif) |
+| **B. Cartoon action** ([prompt](examples/b-robot-mishap/prompt.md)) | a robot trips on a cone, the parcel flies, she reacts | ![B](docs/media/v02-b-robot-mishap.gif) |
+| **C. Information, staged** ([prompt](examples/c-ai-pipeline/prompt.md)) | three tasks go through an AI gate and come out finished | ![C](docs/media/v02-c-ai-pipeline.gif) |
 
-Run any of them without Claude:
+Full-quality MP4s are in `docs/media/`. Run any demo yourself:
 
 ```bash
-node skills/idea-to-3d/scripts/scaffold.mjs /tmp/demo --scene examples/b-lighthouse-night/scene.js
+node skills/idea-to-3d/scripts/scaffold.mjs /tmp/demo --scene examples/b-robot-mishap/scene.js
 cd /tmp/demo && node serve.mjs
 ```
 
+The v0.1 demos are kept in `examples/legacy/` and `docs/media/legacy-v0.1/`.
+
 ## How it works
 
-The skill ships a small template: `three.js` (vendored, unmodified), a runtime with four light moods (`day`, `sunset`, `night`, `studio`), an orbit camera, a deterministic clock (`?t=3.5` freezes a frame) and a low-poly toolbox. The only file the model writes is `src/scene.js`, with a tiny contract (`build` + `update(t)`), so results are reproducible and easy to modify. Scripts:
+`template/` is a small Three.js project: a runtime (four moods, tone mapping, sky), `kit.js` (primitives, terrain, water, scatter), **`cine.js`** (Director + audit), `assets.js` (GLB loader, skinned characters, clip maps), `city.js` (an ASCII map becomes roads, buildings facing the street, trees, lamps) and a local static server. The model writes one file, `src/scene.js`: build the world, describe the action on a timeline, list the shots. Everything is a pure function of time, so a scene renders the same way every time.
 
 | Script | What it does |
 |---|---|
-| `scaffold.mjs` | copies the template into a new folder, never overwrites |
-| `lint-scene.mjs` | rejects network calls, `eval`, external URLs, `Math.random`, wall-clock time |
-| `capture.mjs` | serves the scene, loads it in headless Chrome, saves frames, fails on console errors or blank/frozen output (`npm i -D puppeteer-core`) |
+| `scaffold.mjs` | copies the template and the asset pack into a new folder, never overwrites |
+| `lint-scene.mjs` | guard rail: rejects network calls, `eval`, external URLs, `Math.random`, wall-clock time (a regex check, not a sandbox) |
+| `cine-qa.mjs` | audit + contact sheet + MP4 preview (`--video 15`, `--gpu` for speed) |
+| `capture.mjs` | frames at chosen times, console errors, blank or frozen output |
 | `install.mjs` | installs the skill |
 
-## Limits (honest)
+## Honest limits
 
-- Low-poly procedural scenes: boxes, cylinders, cones, spheres. No imported 3D models, textures or physics.
-- Quality depends on the prompt and on the model; the skill adds composition rules and a visual check, not magic.
-- `capture.mjs` needs Chrome or Chromium. Without it the skill can only lint, and says so.
-- It makes scenes for the browser. It does not export video.
+- The audit measures framing, clearance, clipping, motion and motivation. It cannot judge beauty, humour or whether the story is clear: that still needs eyes on the contact sheet and the video, which is why the skill makes the model look.
+- Low-poly cartoon look. No physics engine: collisions are avoided by construction (lanes, bounding boxes), not simulated. No lip-sync, no facial expressions beyond what the models provide.
+- The bundled pack is small (33 models, 3.7 MB). Bring your own GLB for anything specific.
+- Visual QA needs Chrome/Chromium; without it the skill can only lint and must say so.
+- Runs in the browser. It does not export a finished video file (the preview MP4 is a QA aid rendered from your own browser).
+
+## Assets and licences
+
+Code: MIT. Bundled models: **CC0 1.0** (Kenney city, car, character and space kits; RobotExpressive by Tomás Laulhé/Quaternius, conversion by Don McCurdy; three.js is MIT). Credit is appreciated, not required. See [`skills/idea-to-3d/assets/NOTICE.md`](skills/idea-to-3d/assets/NOTICE.md) and each pack's `LICENSE.txt`. Third-party assets keep their own licence; they are not relicensed as MIT. Details in [THIRD_PARTY.md](THIRD_PARTY.md).
 
 ## Security
 
-No telemetry, no network at runtime, local server bound to `127.0.0.1`, writes only inside the scene folder. Details in [SECURITY.md](SECURITY.md). Three.js is MIT, see [THIRD_PARTY.md](THIRD_PARTY.md).
+No telemetry, no network at runtime, local server on `127.0.0.1`, writes only inside the scene folder, model files read only from inside the project. See [SECURITY.md](SECURITY.md).
 
 ## Contribute
 
-New helpers, scenes and fixes are welcome: [CONTRIBUTING.md](CONTRIBUTING.md). If this saved you an hour, a ⭐ on the repo helps other people find it.
+Helpers, scenes, assets with a clear licence, fixes: [CONTRIBUTING.md](CONTRIBUTING.md). If this saved you an afternoon, a ⭐ helps others find it.
 
-Made by [Jacky West](https://jackywest.com/idea-to-3d?utm_source=github&utm_medium=readme&utm_campaign=idea-to-3d). Want to go further and turn scenes into rendered videos with a director agent? That's a separate, paid kit: [Kit Reels IA](https://jackywest.com/kit-reels-ia?utm_source=github&utm_medium=readme&utm_campaign=idea-to-3d). This skill is, and stays, free and MIT.
+Made by [Jacky West](https://jackywest.com/idea-to-3d?utm_source=github&utm_medium=readme&utm_campaign=idea-to-3d). To go further and turn scenes into produced Reels with a director agent, there is a separate paid kit: [Kit Reels IA](https://jackywest.com/kit-reels-ia?utm_source=github&utm_medium=readme&utm_campaign=idea-to-3d). This skill is, and stays, free and MIT.
 
 ---
 
 ## 🇫🇷 En français
 
-**Transforme une idée en scène 3D animée avec Claude Code.** Un skill gratuit et open source : décris une scène en une phrase, obtiens un monde 3D low-poly que tu fais tourner dans ton navigateur et que tu modifies en parlant.
+**Transforme une idée en petite scène 3D animée, réalisée comme un mini-film, avec Claude Code.** Tu décris une histoire en une phrase : le skill choisit les personnages, construit un petit monde avec de vrais assets cartoon, anime l'action et dirige une caméra qui suit ce qui se passe. Gratuit, open source (MIT), local dans ton navigateur, sans compte ni clé d'API.
+
+**Nouveautés v0.2** : un *Director* (acteurs, accessoires, plans motivés : suivi, travelling avant, révélation, panoramique), un pack d'assets CC0 inclus (ville, voitures, personnages, robot, machines), un **audit de cinématographie** (sujet cadré et assez grand, caméra jamais dans un mur, corps qui ne se traversent pas, mouvements motivés) et une **planche-contact + aperçu MP4** que le modèle doit regarder avant de livrer.
 
 **Installation**
 
@@ -91,12 +108,8 @@ git clone https://github.com/jackywest/idea-to-3d.git
 node idea-to-3d/skills/idea-to-3d/scripts/install.mjs
 ```
 
-**Utilisation** : dans Claude Code, dis par exemple : « Utilise idea-to-3d : un petit robot qui salue sur une colline, une maisonnette et deux sapins derrière ». Claude crée un dossier, écrit `src/scene.js`, le vérifie dans un vrai navigateur sans interface (erreurs console, images vides ou figées), regarde les images, puis te donne la commande : `node serve.mjs` et l'adresse `http://127.0.0.1:5173/`. Glisse pour tourner, molette pour zoomer, espace pour mettre en pause. Ensuite : « passe en nuit, donne une lanterne au robot, ajoute un chien ».
+**Utilisation** : dans Claude Code : « Utilise idea-to-3d : un robot livre un colis à une femme devant sa porte, il trébuche sur un cône, le colis vole, elle réagit. » Puis `cd ma-scene && node serve.mjs` et ouvre `http://127.0.0.1:5173/`. Touche **C** pour quitter la caméra du film et tourner librement.
 
-**Exemples** : A robot (première scène), B phare de nuit (créatif), C modification de A (nuit + lanterne + chien), tous dans `examples/` et testés.
+**Limites** : l'audit mesure le cadrage, les collisions, le mouvement ; il ne juge pas la beauté ni l'humour. Style low-poly cartoon, pas de moteur physique, pas d'export vidéo final. Pack d'assets réduit (33 modèles) : apporte tes propres GLB. Assets CC0 sous leur propre licence (pas MIT).
 
-**Limites** : scènes procédurales low-poly, pas de modèles importés ni de physique ; la qualité dépend du prompt ; la vérification visuelle demande Chrome ou Chromium ; pas d'export vidéo.
-
-**Sécurité** : aucune télémétrie, aucun réseau à l'exécution, serveur local sur `127.0.0.1`, écriture limitée au dossier de la scène. Voir [SECURITY.md](SECURITY.md).
-
-Fait par [Jacky West](https://jackywest.com/idea-to-3d?utm_source=github&utm_medium=readme&utm_campaign=idea-to-3d). Si ça t'a fait gagner du temps, une ⭐ aide d'autres personnes à le trouver. Pour aller plus loin (rendre ces scènes en vidéos avec un agent réalisateur), il existe un kit payant séparé : [Kit Reels IA](https://jackywest.com/kit-reels-ia?utm_source=github&utm_medium=readme&utm_campaign=idea-to-3d). Ce skill reste gratuit et MIT.
+Fait par [Jacky West](https://jackywest.com/idea-to-3d?utm_source=github&utm_medium=readme&utm_campaign=idea-to-3d). Une étoile aide d'autres personnes à le trouver. Pour aller plus loin (produire des Reels), il existe un kit payant séparé : [Kit Reels IA](https://jackywest.com/kit-reels-ia?utm_source=github&utm_medium=readme&utm_campaign=idea-to-3d). Ce skill reste gratuit et MIT.

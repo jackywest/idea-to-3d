@@ -10,3 +10,9 @@
 | Object seems to float | y offset wrong | the floor is y = 0; a box of height h sits at y = h / 2 |
 | "scene does not change over time" | motion depends on something other than `t` | animate from the `t` argument of `update` |
 | `lint-scene` says Math.random | non reproducible | use `kit.rng(seed)` |
+| `cine-qa`: "subject occluded" / "camera inside geometry" | camera placed behind a building | use `azimuth` along the street axis, register buildings with `cine.obstacle`, or raise `elev` |
+| `cine-qa`: "bodies interpenetrate" | two actors, or an actor and a building, overlap | move a lane (sidewalks are narrow), stagger timings, check `details.penetration` for who and when |
+| `cine-qa`: "N moving shot(s) without a why" | moving shots need a motivation | add `why: '...'` or make it `static` |
+| Character shows its back | model faces -Z | `assets.character` already turns Kenney models; for other models pass `yaw: Math.PI` |
+| Everything looks grey | missing `Textures/` next to a GLB | copy the Textures folder with the model, or use embedded-texture GLBs |
+| `cine-qa` very slow | software GL | add `--gpu` on a machine with a GPU |

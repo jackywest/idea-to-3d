@@ -16,7 +16,9 @@ export default {
 };
 ```
 
-`ctx` = `{ THREE, kit, scene, camera, renderer, mood, config }`.
+`ctx` = `{ THREE, kit, scene, camera, renderer, mood, config, cine }`. `build` may be `async` (asset loading). `cine` is the Director: when a scene defines shots (`cine.shot`) the camera follows them; otherwise the old orbit camera is used (v0.1 behaviour). `config.fog = [near, far]` sets fog for large scenes. Imports available to a scene (it lives in `src/`): `./assets.js` (`Assets`, `KENNEY_CLIPS`, `EXPRESSIVE_CLIPS`), `./city.js` (`buildCity`).
+
+Full direction vocabulary: `cinematography.md`.
 
 ## kit helpers (all return THREE objects, colours are CSS hex strings)
 
@@ -48,7 +50,7 @@ Position arrays are `[x, y, z]`, y is up, the floor is at y = 0. One unit is abo
 
 ## Query parameters (for the user and for tests)
 
-`?mood=night` `?pixel=1` `?t=3.5` (freeze at 3.5 s). `window.__setTime(t)` and `window.__i3d` (`ready`, `errors`) exist for `capture.mjs`.
+`?mood=night` `?pixel=1` `?t=3.5` (freeze at 3.5 s) `?capture=1` (no free-running loop: render only when `window.__setTime(t)` is called). Key `C` toggles free camera during a cinematic. `window.__setTime(t)`, `window.__cine`, `window.__i3d` (`ready`, `errors`) exist for the QA scripts.
 
 ## Limits
 

@@ -24,7 +24,7 @@ export function start(p = port) {
   });
   return new Promise(r => srv.listen(p, '127.0.0.1', () => r(srv)));
 }
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (process.argv[1] && fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url))) {   // realpath: works from symlinked folders too
   await start(port);
   console.log(`Scene ready: http://127.0.0.1:${port}/   (Ctrl+C to stop)`);
 }

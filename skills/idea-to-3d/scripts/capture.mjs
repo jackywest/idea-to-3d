@@ -21,20 +21,21 @@ let pptr;
 const reqHere = createRequire(import.meta.url);
 for (const r of [req, reqHere]) for (const n of ['puppeteer', 'puppeteer-core']) { if (pptr) break; try { pptr = r(n); } catch {} }
 if (!pptr) { console.error('Install a browser driver first:  npm i -D puppeteer-core  (and set CHROME_PATH if Chrome is not found)'); process.exit(5); }
-const chrome = [process.env.CHROME_PATH, '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', '/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser'].filter(Boolean).find(p => fs.existsSync(p));
+const cached = (() => { try { const b = path.join(process.env.HOME || '', '.cache/puppeteer/chrome'); const d = fs.readdirSync(b).sort().pop(); const p = path.join(b, d, d.startsWith('mac_arm') || d.startsWith('mac-') ? 'chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing' : 'chrome-linux64/chrome'); return fs.existsSync(p) ? p : null; } catch { return null; } })();
+const chrome = [process.env.CHROME_PATH, cached, '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', '/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser'].filter(Boolean).find(p => fs.existsSync(p));
 
 const { start } = await import(pathToFileURL(path.join(proj, 'serve.mjs')).href);
 const srv = await start(0);
 const port = srv.address().port;
 fs.mkdirSync(out, { recursive: true });
-const browser = await pptr.launch({ headless: true, executablePath: chrome, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--no-sandbox'] });
+const browser = await pptr.launch({ headless: true, executablePath: chrome, args: [...(a.includes('--gpu') ? ['--use-angle=metal', '--enable-gpu-rasterization', '--ignore-gpu-blocklist'] : ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader']), '--no-sandbox'] });
 const report = { frames: [], errors: [], ok: true };
 try {
   const page = await browser.newPage();
   await page.setViewport({ width: W, height: H });
   page.on('console', m => { if (m.type() === 'error') report.errors.push(m.text()); });
   page.on('pageerror', e => report.errors.push(String(e)));
-  await page.goto(`http://127.0.0.1:${port}/?${query}`, { waitUntil: 'load' });
+  await page.goto(`http://127.0.0.1:${port}/?capture=1&${query}`, { waitUntil: 'load' });
   await page.waitForFunction('window.__i3d && window.__i3d.ready', { timeout: 20000 });
   for (const t of times) {
     await page.evaluate(`window.__setTime(${t})`);

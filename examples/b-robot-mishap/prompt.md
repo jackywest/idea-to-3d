@@ -1,0 +1,1 @@
+Use idea-to-3d: a robot delivers a parcel to a woman waiting at her door. It trips on a traffic cone he never sees, the parcel flies through the air and lands at her feet. Show the cone before the trip, follow the parcel in flight, then her reaction, then the robot on the ground. End wide on the street.
